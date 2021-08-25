@@ -1,0 +1,48 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: car-svc
+  namespace:
+  annotations:
+    run.googleapis.com/launch-stage: ALPHA
+    run.googleapis.com/ingress: internal-and-cloud-load-balancing
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      serviceAccountName: car-svc@.iam.gserviceaccount.com
+      containerConcurrency: 80
+      containers:
+        - env:
+            - name: DEBUG
+              value: "true"
+            - name: DEPLOYED_AT
+              value: "%DEPLOYED_AT%"
+            - name: ENV
+              value: prd
+            - name: GCP_PROJECT_NUMBER
+              value: ""
+            - name: GOOGLE_CLOUD_PROJECT
+              value: ""
+            - name: GRPC_GO_LOG_SEVERITY_LEVEL
+              value: info
+            - name: MAINTENANCE_MODE
+              value: "false"
+            - name: SPANNER_DATABASE_ID
+              value: car-svc
+            - name: SPANNER_INSTANCE_ID
+              value: grp-svc-1
+            - name: ZONEINFO
+              value: zoneinfo.zip
+          image: gcr.io//car-svc:%IMAGE_ID%
+          resources:
+            limits:
+              cpu: "4"
+              memory: 4G
+      timeoutSeconds: 60
+  traffic:
+    - latestRevision: true
+      percent: 100

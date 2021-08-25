@@ -1,0 +1,377 @@
+{
+	"info": {
+		"_postman_id": "6f5f7c99-ef40-4529-845f-f6296ac04229",
+		"name": "car-svc-dev",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Car",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var uuid = require('uuid')",
+							"pm.globals.set('car_brand_name', 'developer-test-car_brand_name_' + uuid.v4())"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to create car successfully', function () {",
+							"    pm.expect(pm.response).to.have.status(201)",
+							"    pm.expect(pm.response).to.not.have.body()",
+							"",
+							"    pm.globals.set('car_id', pm.response.headers.get('Location'))",
+							"})",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"brand_name\": \"{{car_brand_name}}\",\n    \"model_name\": \"accord\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Read Car",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to read car successfully', function () {",
+							"    pm.expect(pm.response).to.have.status(200)",
+							"    pm.expect(pm.response).to.have.body()",
+							"    pm.expect(pm.response.json()).to.have.property('car_id', pm.globals.get('car_id'))",
+							"    pm.expect(pm.response.json()).to.have.property('brand_name', pm.globals.get('car_brand_name'))",
+							"}) ",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars/{{car_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars",
+						"{{car_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Car",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.globals.set('new_model_name', 'developer-test-car_model_name')"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to update car successfully', function () {",
+							"    pm.expect(pm.response).to.have.status(204)",
+							"    pm.expect(pm.response).to.not.have.body()",
+							"})",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"model_name\": \"{{new_model_name}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars/{{car_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars",
+						"{{car_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Read Car After Update",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to check car after update', function () {",
+							"    pm.expect(pm.response).to.have.status(200)",
+							"    pm.expect(pm.response).to.have.body()",
+							"",
+							"    pm.expect(pm.response.json()).to.have.property('model_name', pm.globals.get('new_model_name'))",
+							"    pm.expect(pm.response.json()).to.have.property('date_updated')",
+							"}) ",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars/{{car_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars",
+						"{{car_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search Cars",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to search cars successfully', function () {",
+							"    pm.expect(pm.response).to.have.status(200)",
+							"    pm.expect(pm.response).to.have.body()",
+							"",
+							"    pm.expect(pm.response.json()[0]).to.have.property('car_id', pm.globals.get('car_id'))",
+							"    pm.expect(pm.response.json()[0]).to.have.property('brand_name', pm.globals.get('car_brand_name'))",
+							"    pm.expect(pm.response.json()[0]).to.have.property('model_name', pm.globals.get('new_model_name'))",
+							"}) ",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const set_value = (name, value) => {",
+							"  pm.globals.set(name, value)",
+							"  console.log(name, value)",
+							"}",
+							"",
+							"var encoded = btoa('[{\"type\":\"OPEN_BRACKET\"},{\"type\":\"OPEN_BRACKET\"},{\"filter\":{\"case_insensitive_string\":true,\"key\":\"brand_name\",\"partial_match_string\":true,\"value\":\"' + pm.globals.get('car_brand_name') +'\"}},{\"type\":\"CLOSE_BRACKET\"},{\"type\":\"AND\"},{\"type\":\"OPEN_BRACKET\"},{\"filter\":{\"case_insensitive_string\":true,\"key\":\"model_name\",\"partial_match_string\":true,\"value\":\"' + pm.globals.get('new_model_name') +'\"}},{\"type\":\"CLOSE_BRACKET\"},{\"type\":\"CLOSE_BRACKET\"}]')",
+							"",
+							"set_value('query_coded', encodeURIComponent(encoded))",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars?query={{query_coded}}&limit=20&offset=0&order_by=date_created",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars"
+					],
+					"query": [
+						{
+							"key": "query",
+							"value": "{{query_coded}}"
+						},
+						{
+							"key": "limit",
+							"value": "20"
+						},
+						{
+							"key": "offset",
+							"value": "0"
+						},
+						{
+							"key": "order_by",
+							"value": "date_created"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Car",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to delete car successfully', function () {",
+							"    pm.expect(pm.response).to.have.status(204)",
+							"    pm.expect(pm.response).to.not.have.body()",
+							"})",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars/{{car_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars",
+						"{{car_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Read Car After Delete",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('expect to read car not found after delete', function () {",
+							"    pm.expect(pm.response).to.have.status(404)",
+							"    pm.expect(pm.response).to.have.body()",
+							"}) ",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/car-svc/v1/cars/{{car_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"car-svc",
+						"v1",
+						"cars",
+						"{{car_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

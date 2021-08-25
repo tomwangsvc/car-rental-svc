@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "title": "cars search",
+  "type": "object",
+  "required": [
+    "query"
+  ],
+  "properties": {
+    "query": {
+      "$ref": "#/definitions/cars_search_query"
+    }
+  },
+  "definitions": {
+    "cars_search_query": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/filters"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "filters": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "key",
+            "value"
+          ],
+          "properties": {
+            "key": {
+              "const": "brand_name"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1
+            },
+            "not_condition": false,
+            "partial_match_string": true,
+            "is_null": true,
+            "case_insensitive_string": true
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "key",
+            "value"
+          ],
+          "properties": {
+            "key": {
+              "const": "model_name"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1
+            },
+            "not_condition": false,
+            "partial_match_string": true,
+            "is_null": true,
+            "case_insensitive_string": true
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

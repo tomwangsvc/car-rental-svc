@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "car",
+  "type": "object",
+  "properties": {
+    "brand_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "car_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "date_created": {
+      "type": "string",
+      "minLength": 1,
+      "format": "time"
+    },
+    "date_updated": {
+      "type": "string",
+      "minLength": 1,
+      "format": "time"
+    },
+    "model_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "test": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,1059 @@
+version: 2.1
+orbs:
+  slack: circleci/slack@3.4.2
+references:
+  environment: &environment
+    run:
+      name: "Environment"
+      command: echo $(printenv)
+
+  on_fail_notification: &on_fail_notification
+    - slack/status:
+        fail_only: true
+        only_for_branches: "master"
+        mentions: ${CIRCLE_USERNAME}
+
+  gcp_service_account_admin_circleci_svc:
+    &gcp_service_account_admin_circleci_svc
+    gcp_project_id: l214552987832909
+    gcp_project_key: ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
+
+  node_key: &node_key node-{{ checksum "test-api/package-lock.json" }}
+
+  restore_node_cache: &restore_node_cache
+    restore_cache:
+      key: *node_key
+
+  save_node_cache: &save_node_cache
+    save_cache:
+      key: *node_key
+      paths:
+        - node_modules
+
+  node_dependencies: &node_dependencies
+    run:
+      name: "Download node dependencies"
+      command: |
+        # Exit script if you try to use an uninitialized variable.
+        set -o nounset
+        # Exit script if a statement returns a non-true return value.
+        set -o errexit
+        # Use the error status of the first failure, rather than that of the last item in a pipeline.
+        set -o pipefail
+
+        . ${HOME}/.nvm/nvm.sh
+        cd test-api
+        npm --quiet ci
+
+commands:
+  prevent_job_rerun:
+    parameters:
+      svc:
+        type: string
+      job_name:
+        type: string
+      env:
+        type: string
+      gcp_project_id_admin:
+        type: string
+    steps:
+      - run:
+          name: "Check if a job is being re-run and fail the job if that is the case"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            JOB_INVOCATION_FLAG=JOB_INVOCATION_FLAG_<< parameters.svc >>_<< parameters.job_name >>_<< parameters.env >>_${CIRCLE_BUILD_NUM}.txt
+
+            echo "Checking for file '${JOB_INVOCATION_FLAG}', will fail if it exists because that will flag a job being re-run"
+            echo "-> See https://ideas.circleci.com/ideas/CCI-I-852"
+
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-cicd-circleci
+
+            set +o errexit
+            gsutil stat gs://<< parameters.gcp_project_id_admin >>-cicd-circleci/${JOB_INVOCATION_FLAG}
+            if [[ $? == 0 ]]; then
+              echo "Found file '${JOB_INVOCATION_FLAG}', failing because job is being re-run"
+              exit 1;
+            fi
+            set -o errexit
+
+            touch ${JOB_INVOCATION_FLAG}
+            gsutil cp ${JOB_INVOCATION_FLAG} gs://<< parameters.gcp_project_id_admin >>-cicd-circleci
+
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-cicd-circleci
+  enable_service_account:
+    parameters:
+      gcp_project_id:
+        type: string
+      gcp_project_key:
+        type: string
+    steps:
+      - run:
+          name: "Enable service account"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            echo << parameters.gcp_project_key >> | base64 --decode > gcp_project_key.json
+            gcloud auth activate-service-account --key-file gcp_project_key.json
+            gcloud config set project << parameters.gcp_project_id >>
+            gcloud config set compute/region us-central1
+
+            gcloud version
+            gcloud components list
+  install_go:
+    steps:
+      - run:
+          name: "Install go"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            curl -o go1.16.3.linux-amd64.tar.gz https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz
+            tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
+            PATH=/usr/local/go/bin:${PATH} go version
+  install_tools:
+    steps:
+      - run:
+          name: "Install tools"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            apt-get update && apt-get -y -qq install jq wget
+
+            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+            python3 get-pip.py
+            python3 -m pip install yq
+  install_migrate:
+    steps:
+      - run:
+          name: "Install migrate"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            # curl does not work with this project
+            wget https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
+            tar -C /usr/local/bin -xzf migrate.linux-amd64.tar.gz
+            mv /usr/local/bin/migrate.linux-amd64 /usr/local/bin/migrate
+            migrate --version
+  install_node:
+    steps:
+      - run:
+          name: "Install node.js"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.38.0/install.sh | bash
+            . ${HOME}/.nvm/nvm.sh
+            nvm install 14.16.1
+
+            echo "node version -> $(node --version)"
+            echo "npm version -> $(npm --version)"
+            node -e "console.log('Running Node.js ' + process.version)"
+  generate_container:
+    parameters:
+      svc:
+        type: string
+      gcp_project_id_container_repository:
+        type: string
+    steps:
+      - run:
+          name: "Generate container"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            if [ ${CIRCLE_BRANCH} != "master" ] && [[ ${CIRCLE_BRANCH} != *"hotfix/"* ]]; then
+              echo "SKIPPING step for branch ${CIRCLE_BRANCH}"
+              exit 0
+
+              else
+                echo "NOT SKIPPING step for branch ${CIRCLE_BRANCH}"
+            fi
+
+            echo "Removing files not required in container"
+            rm -f ${HOME}/tmp/migratex
+            rm -f ${HOME}/tmp/*.sql
+            rm -rf ${HOME}/tmp/test-api
+            rm -rf ${HOME}/tmp/spec
+
+            echo
+            echo "--------------------------------------------------------------------------------"
+            echo "Content for the container"
+            echo
+            find ${HOME}/tmp -maxdepth 3 -name "*"
+            echo "--------------------------------------------------------------------------------"
+            echo
+
+            echo
+            echo "--------------------------------------------------------------------------------"
+            echo "Using Dockerfile"
+            echo
+            cat ${HOME}/tmp/Dockerfile
+            echo "--------------------------------------------------------------------------------"
+            echo
+
+            cd ${HOME}/tmp
+            export IMAGE="gcr.io/<< parameters.gcp_project_id_container_repository >>/<< parameters.svc >>:${CIRCLE_SHA1}"
+            echo "Creating image -> ${IMAGE}"
+            gcloud builds submit --tag ${IMAGE}
+
+jobs:
+  check_archive:
+    parameters:
+      svc:
+        type: string
+      gcp_project_id_admin:
+        type: string
+      gcp_project_id_container_repository:
+        type: string
+      zone_info:
+        type: string
+    docker:
+      - image: google/cloud-sdk:335.0.0
+        auth:
+          username: ${DOCKERHUB_USERNAME}
+          password: ${DOCKERHUB_PASSWORD}
+    steps:
+      - *environment
+      - checkout
+
+      - install_go
+
+      - run:
+          name: "Run checks"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            export PATH=/usr/local/go/bin:${PATH}
+
+            echo "Running formatting checks"
+            failed_fmt=$(go fmt << parameters.svc >>/...)
+            if [ ! -z "${failed_fmt}" ]; then
+              echo >&2 "Go files failed FMT checks. In the orchestration repository 'svc' root please run: GOPATH=\$(pwd) && go fmt << parameters.svc >>/..."
+              for fn in ${failed_fmt}; do
+                echo >&2 "FAILED FMT CHECK -> $(pwd)/${fn}"
+              done
+              exit 1
+            fi
+
+            echo "Running vet checks"
+            go vet << parameters.svc >>/...
+
+            echo "Running linting checks"
+            cd ${HOME} && go get -u github.com/mgechev/revive && cd ${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}
+            ${HOME}/go/bin/revive -formatter stylish -config revive.toml -exclude ./vendor/... ./...
+
+            echo "Checks complete"
+
+      - run:
+          name: "Run unit tests"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            export PATH=/usr/local/go/bin:${PATH}
+
+            GO_TEST_FILE_COUNT=$(find . -name "*_test.go" | wc -l | tr -d '[:space:]')
+            echo "Found '${GO_TEST_FILE_COUNT}' Go test files"
+            if [ "${GO_TEST_FILE_COUNT}" -gt 0 ]; then
+              GO_TEST_PACKAGES=$(find . -type f -name "*_test.go" | xargs -n1 dirname | sort | uniq )
+              for i in ${GO_TEST_PACKAGES}
+              do
+                echo "Processing: ${i}"
+                go test -timeout 5000ms ${i}
+              done
+            fi
+
+      - enable_service_account: *gcp_service_account_admin_circleci_svc
+
+      - run:
+          name: "Check postman environments files are available"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/dev/<< parameters.svc >>_dev.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/dev/<< parameters.svc >>_dev-localhost.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production/<< parameters.svc >>/prd/<< parameters.svc >>_prd.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/stg/<< parameters.svc >>_stg.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/uat/<< parameters.svc >>_uat.postman_environment.json
+
+      - install_node
+      - *restore_node_cache
+      - *node_dependencies
+      - *save_node_cache
+      - install_tools
+
+      - run:
+          name: "Check for outdated dependencies in postman api tests"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            . ${HOME}/.nvm/nvm.sh
+
+            cd test-api
+
+            npm outdated
+
+      - run:
+          name: "Audit postman api tests"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            . ${HOME}/.nvm/nvm.sh
+
+            cd test-api
+
+            # error off since we determine which vulnerabilities should gate the build
+            set +o errexit
+            NPM_AUDIT=$(npm audit --json)
+            set -o errexit
+
+            echo "${NPM_AUDIT}"
+
+            HIGH=$(echo ${NPM_AUDIT} | jq .metadata.vulnerabilities.high)
+            CRITICAL=$(echo ${NPM_AUDIT} | jq .metadata.vulnerabilities.critical)
+
+            echo "Found npm audit high vulnerabilities HIGH=${HIGH}"
+            echo "Found npm audit critical vulnerabilities CRITICAL=${CRITICAL}"
+
+            if [ "${HIGH}" -gt 0 ] || [ "${CRITICAL}" -gt 0 ]; then
+              echo "Found '${HIGH}' and '${CRITICAL}' npm audit vulnerabilities. These issues should be resolved ASAP but unfortunately that is out of our control"
+            fi
+
+      - run:
+          name: "Build"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            export PATH=/usr/local/go/bin:${PATH}
+
+            export LC_CI_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            export LC_CI_BUILD_NUMBER=${CIRCLE_BUILD_NUM}
+            export LC_CI_COMMIT_ID=${CIRCLE_SHA1}
+            LC_CI_COMMIT_MSG=$(git log --format=oneline -n 1 ${CIRCLE_SHA1})
+            export LC_CI_COMMIT_MSG=${LC_CI_COMMIT_MSG//\"/\'}
+
+            echo "{\"build_date\":\"${LC_CI_BUILD_DATE}\",\"build_number\":\"${LC_CI_BUILD_NUMBER}\",\"project\":\"<< parameters.svc >>\",\"commit_id\":\"${LC_CI_COMMIT_ID}\",\"commit_msg\":\"${LC_CI_COMMIT_MSG}\"}" > ci_release_notes.json
+            cat ci_release_notes.json
+
+            echo "Adding metadata to health check"
+            # It is also possible to do this more generically -> find ./internal/http -type f -name "*.go" -exec sed -i "s/@LC_CI_BUILD_NUMBER@/${LC_CI_BUILD_NUMBER}/g" {} +
+            sed -i "s/@LC_CI_BUILD_DATE@/${LC_CI_BUILD_DATE}/g" ./internal/http/routes/health.go
+            sed -i "s/@LC_CI_BUILD_NUMBER@/${LC_CI_BUILD_NUMBER}/g" ./internal/http/routes/health.go
+            sed -i "s/@LC_CI_COMMIT_ID@/${LC_CI_COMMIT_ID}/g" ./internal/http/routes/health.go
+
+            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o << parameters.svc >> ./cmd/service
+
+            echo "Generating OpenAPI spec"
+            cd ${HOME} && go get -u github.com/swaggo/swag/cmd/swag@v1.6.9 && cd ${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}
+            ${HOME}/go/bin/swag init --generalInfo internal/http/client.go --propertyStrategy snakecase --parseVendor --output spec
+            ls -al
+            ls -al spec
+
+      - run:
+          name: "Archive"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            if [ ${CIRCLE_BRANCH} != "master" ] && [[ ${CIRCLE_BRANCH} != *"hotfix/"* ]]; then
+              echo "SKIPPING step for branch ${CIRCLE_BRANCH}"
+              exit 0
+
+              else
+                echo "NOT SKIPPING step for branch ${CIRCLE_BRANCH}"
+            fi
+
+            ls -al
+
+            mkdir ${HOME}/tmp
+
+            if [ -d scripts/spanner ]; then
+              echo "Including 'spanner' scripts"
+              cp -rf scripts/spanner ${HOME}/tmp
+
+              echo "Building migrate"
+              wget https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
+              tar -C /usr/local/bin -xzf migrate.linux-amd64.tar.gz
+              echo
+              ls -al /usr/local/bin/
+              cp /usr/local/bin/migrate.linux-amd64 ${HOME}/tmp/spanner/migrate
+              ${HOME}/tmp/spanner/migrate --version
+
+              echo "Building migratex"
+              export PATH=/usr/local/go/bin:${PATH}
+              go get -u github.com/localcover/public-migratex
+              echo
+              ls -al ${HOME}/go/bin/
+              cp ${HOME}/go/bin/public-migratex ${HOME}/tmp/spanner/migratex
+            fi
+
+            cp -f ci_release_notes.json ${HOME}/tmp
+            cp -f deployments/svc_*.yaml ${HOME}/tmp
+            cp -f deployments/policy.yaml ${HOME}/tmp
+            cp -f build/package/Dockerfile ${HOME}/tmp
+            cp -f << parameters.svc >> ${HOME}/tmp
+            cp -f /etc/ssl/certs/ca-certificates.crt ${HOME}/tmp
+            cp -f /usr/local/go/lib/time/<< parameters.zone_info >> ${HOME}/tmp
+            [ -d templates ] && for i in $(find templates -name "*.md" ); do rm -f $i; done && cp -rf templates ${HOME}/tmp
+            [ -d schema ] && for i in $(find schema -name "*.md" ); do rm -f $i; done && cp -rf schema ${HOME}/tmp
+            [ -d spec ] && for i in $(find spec -name "*.go" ); do rm -f $i; done && cp -rf spec ${HOME}/tmp
+            [ -d test-api ] && for i in $(find test-api -name "*.md" ); do rm -f $i; done && cp -rf test-api ${HOME}/tmp
+            [ -d events ] && cp -rf events ${HOME}/tmp
+
+            cd ${HOME}/tmp
+
+            echo
+            echo "--------------------------------------------------------------------------------"
+            echo "Content to be archived"
+            echo
+            find . -maxdepth 3 -name "*"
+            echo "--------------------------------------------------------------------------------"
+            echo
+
+            tar -cvzf $HOME/<< parameters.svc >>-${CIRCLE_SHA1}.tgz .
+            ls -al ${HOME}
+            gsutil cp $HOME/<< parameters.svc >>-${CIRCLE_SHA1}.tgz gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun
+
+      - generate_container:
+          gcp_project_id_container_repository: << parameters.gcp_project_id_container_repository >>
+          svc: << parameters.svc >>
+
+  deploy:
+    parameters:
+      svc:
+        type: string
+      env:
+        type: string
+      gcp_project_id:
+        type: string
+      gcp_region:
+        type: string
+      gcp_project_id_admin:
+        type: string
+    docker:
+      - image: google/cloud-sdk:335.0.0
+        auth:
+          username: ${DOCKERHUB_USERNAME}
+          password: ${DOCKERHUB_PASSWORD}
+    steps:
+      - *environment
+
+      - enable_service_account: *gcp_service_account_admin_circleci_svc
+
+      - prevent_job_rerun:
+          svc: << parameters.svc >>
+          job_name: deploy
+          env: << parameters.env >>
+          gcp_project_id_admin: << parameters.gcp_project_id_admin >>
+
+      - install_tools
+
+      - run:
+          name: "Download & configure archive prior to deploy"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            gsutil cp gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun/<< parameters.svc >>-${CIRCLE_SHA1}.tgz .
+            tar -xzf << parameters.svc >>-${CIRCLE_SHA1}.tgz
+
+            echo
+            echo "--------------------------------------------------------------------------------"
+            echo "Content"
+            echo
+            ls -al
+            echo "--------------------------------------------------------------------------------"
+            echo
+
+            DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            echo "DEPLOYED_AT=${DEPLOYED_AT}"
+
+            sed -e "s/%IMAGE_ID%/${CIRCLE_SHA1}/g" svc_<< parameters.env >>.yaml > svc.yaml.tmp
+            sed -e "s/%DEPLOYED_AT%/${DEPLOYED_AT}/g" svc.yaml.tmp > svc.yaml
+
+            echo
+            echo "--------------------------------------------------------------------------------"
+            echo "Config - svc.yaml"
+            echo
+            cat svc.yaml
+            echo "--------------------------------------------------------------------------------"
+            echo
+
+      - run:
+          name: "Apply migrations"
+          no_output_timeout: 25m
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            ls -al
+
+            if [ -d spanner ]; then
+              echo
+              ls -al ./spanner/
+              echo
+
+              if [ -f spanner/migrate ] && [ -f spanner/migratex ]; then
+                echo "Found migrate/migratex, will apply migrations"
+                cp spanner/migrate /usr/local/bin/migrate
+
+                echo
+                ls -al /usr/local/bin/
+                echo
+
+                echo "Making credentials available to migratex"
+                echo ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC} | base64 --decode > gcp_project_key.json
+                export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/gcp_project_key.json
+
+                echo "Setting default GCP project for the Spanner Go client library used by migratex"
+                gcloud config set project << parameters.gcp_project_id >>
+                gcloud config list
+
+                echo "Determining Spanner instance and database from svc.yaml"
+                SPANNER_INSTANCE_ID=$(cat svc.yaml | yq -r '.spec.template.spec.containers[0].env | .[] | select(.name=="SPANNER_INSTANCE_ID") | .value')
+                if [ "${SPANNER_INSTANCE_ID}" == "" ]; then
+                  echo "Could not determine Spanner instance ID from svc.yaml"
+                  exit 1
+                fi
+                echo "Found SPANNER_INSTANCE_ID=${SPANNER_INSTANCE_ID}"
+
+                SPANNER_DATABASE_ID=$(cat svc.yaml | yq -r '.spec.template.spec.containers[0].env | .[] | select(.name=="SPANNER_DATABASE_ID") | .value')
+                if [ "${SPANNER_DATABASE_ID}" == "" ]; then
+                  echo "Could not determine Spanner database ID from svc.yaml"
+                  exit 1
+                fi
+                echo "Found SPANNER_DATABASE_ID=${SPANNER_DATABASE_ID}"
+
+                cd spanner
+                ./migratex -env_id=<< parameters.env >> -gcp_project_id=<< parameters.gcp_project_id >> -spanner_instance_id=${SPANNER_INSTANCE_ID} -spanner_database_id=${SPANNER_DATABASE_ID}
+
+              else
+                echo "migratex/migratex not found, cannot apply migrations"
+                exit 1;
+              fi
+            fi
+
+      - run:
+          name: "Deploy container"
+          no_output_timeout: 25m
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            echo
+            echo "--------------------------------------------------------------------------------"
+            echo "Deploying"
+            echo
+            cat svc.yaml
+            echo
+            cat policy.yaml
+            echo
+            cat ci_release_notes.json
+            echo "--------------------------------------------------------------------------------"
+            echo
+
+            echo "Determining service ID from svc.yaml"
+            SVC_ID=$(cat svc.yaml | yq -r '.metadata.name')
+            if [ "${SVC_ID}" == "" ]; then
+              echo "Could not determine service ID from svc.yaml"
+              exit 1
+            fi
+            echo "Found SVC_ID=${SVC_ID}"
+
+            gcloud --project=<< parameters.gcp_project_id >> alpha run services replace svc.yaml --verbosity=debug --log-http --platform=managed --region=<< parameters.gcp_region >>
+            gcloud --project=<< parameters.gcp_project_id >> run services set-iam-policy ${SVC_ID} policy.yaml --verbosity=debug --log-http --platform=managed --region=<< parameters.gcp_region >>
+
+      - run:
+          name: "Publish schema, postman collections and database migrations"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            DEPLOYED_AT=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+            echo "DEPLOYED_AT=${DEPLOYED_AT}"
+
+            COMMIT_REFERENCE=$(echo ${CIRCLE_SHA1} | cut -c1-7)
+            echo "COMMIT_REFERENCE=${COMMIT_REFERENCE}"
+
+            echo "Running in environment << parameters.env >> and deployment has succeeded and so will now upload any documentation, spanner migrations, schema and postman collections to make them available to interested parties"
+
+            ls -al
+
+            echo "Uploading spanner migrations"
+            if [ -d spanner ]; then
+              echo "Found spanner migrations and will upload them for infrastructure automation"
+              # Ignore errors -> bucket prefix may not exist on first deployment
+              set +o errexit
+              gsutil -m rm -r gs://<< parameters.gcp_project_id_admin >>-svc-spanner/<< parameters.svc >>/<< parameters.env >>
+              set -o errexit
+              gsutil -m cp -r spanner/* gs://<< parameters.gcp_project_id_admin >>-svc-spanner/<< parameters.svc >>/<< parameters.env >>/
+
+              else
+                echo "Skipping upload of spanner migrations, there are none"
+            fi
+
+            mkdir ${HOME}/tmp
+            [ -d schema ] && cp -r schema/* ${HOME}/tmp
+            [ -d spec ] && cp -r spec/* ${HOME}/tmp
+            [ -d test-api ] && cp test-api/*.postman_collection.json ${HOME}/tmp
+            # ***THIS IS AN ALLOW LIST***
+            if [ << parameters.env >> == "dev" ] || [ << parameters.env >> == "stg" ] || [ << parameters.env >> == "uat" ]; then
+              echo "Running in environment << parameters.env >> will now upload any postman environment files to make them available to interested parties"
+              POSTMAN_BUCKET="gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production"
+              gsutil cp ${POSTMAN_BUCKET}/<< parameters.svc >>/<< parameters.env >>/<< parameters.svc >>_*<< parameters.env >>.postman_environment.json .
+              echo "Postman environment files to archive"
+              ls -al
+              cp *.postman_environment.json ${HOME}/tmp
+
+              else
+                echo "Running in environment << parameters.env >> will skip sensitive postman environment files"
+            fi
+
+            cd ${HOME}/tmp
+
+            echo "Spec to archive"
+            ls -al
+            tar -cvzf $HOME/<< parameters.svc >>_spec_${DEPLOYED_AT}_${COMMIT_REFERENCE}.tgz .
+
+            echo "Uploading spec files"
+            gsutil cp $HOME/<< parameters.svc >>_spec_${DEPLOYED_AT}_${COMMIT_REFERENCE}.tgz gs://<< parameters.gcp_project_id_admin >>-svc-spec/<< parameters.svc >>/<< parameters.env >>/
+
+            echo "Uploading postman files"
+            # Ignore errors -> bucket prefix may not exist on first deployment
+            set +o errexit
+            gsutil -m rm -r gs://<< parameters.gcp_project_id_admin >>-svc-postman-collections/<< parameters.svc >>/<< parameters.env >>
+            set -o errexit
+            gsutil -m cp *.postman_collection.json gs://<< parameters.gcp_project_id_admin >>-svc-postman-collections/<< parameters.svc >>/<< parameters.env >>/
+
+  pause:
+    docker:
+      - image: cimg/base:2020.01
+        auth:
+          username: ${DOCKERHUB_USERNAME}
+          password: ${DOCKERHUB_PASSWORD}
+    steps:
+      - run:
+          name: "Waiting for traffic to migrate"
+          command: sleep 60
+
+  test:
+    parameters:
+      svc:
+        type: string
+      env:
+        type: string
+      script:
+        type: string
+      gcp_project_id_admin:
+        type: string
+    docker:
+      - image: google/cloud-sdk:335.0.0
+        auth:
+          username: ${DOCKERHUB_USERNAME}
+          password: ${DOCKERHUB_PASSWORD}
+    steps:
+      - *environment
+
+      - enable_service_account: *gcp_service_account_admin_circleci_svc
+
+      - run:
+          name: "Download integration test suite"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            gsutil cp gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun/<< parameters.svc >>-${CIRCLE_SHA1}.tgz .
+            tar -xzf << parameters.svc >>-${CIRCLE_SHA1}.tgz
+            ls -al
+
+      - install_tools
+      - run:
+          name: "Download postman environment"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            POSTMAN_BUCKET="gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production"
+            [ << parameters.env >> == "prd" ] && POSTMAN_BUCKET="gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production"
+
+            cd test-api
+            gsutil cp ${POSTMAN_BUCKET}/<< parameters.svc >>/<< parameters.env >>/<< parameters.svc >>_*<< parameters.env >>.postman_environment.json .
+            ls -al
+
+      - install_node
+
+      - run:
+          name: "Run integration test suite"
+          command: |
+            # Exit script if you try to use an uninitialized variable.
+            set -o nounset
+            # Exit script if a statement returns a non-true return value.
+            set -o errexit
+            # Use the error status of the first failure, rather than that of the last item in a pipeline.
+            set -o pipefail
+
+            . ${HOME}/.nvm/nvm.sh
+
+            cd test-api
+            ls -al
+            npm --quiet ci
+            npm run-script << parameters.script >>
+
+workflows:
+  version: 2
+  check_archive_deploy:
+    jobs:
+      - check_archive:
+          post-steps: *on_fail_notification
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          gcp_project_id_admin: l214552987832909
+          gcp_project_id_container_repository: l214552987832909
+          zone_info: zoneinfo.zip
+      - deploy:
+          post-steps: *on_fail_notification
+          name: deploy_dev
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - check_archive
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: dev
+          gcp_project_id: l258338943138982
+          gcp_region: us-central1
+          gcp_project_id_admin: l214552987832909
+      - pause:
+          name: pause_dev
+          context: svc
+          requires:
+            - deploy_dev
+      - test:
+          post-steps: *on_fail_notification
+          name: test_dev
+          requires:
+            - pause_dev
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: dev
+          script: test-dev
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_dev_inventory
+          requires:
+            - pause_dev
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: dev
+          script: test-dev_inventory
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_dev_rma
+          requires:
+            - pause_dev
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: dev
+          script: test-dev_rma
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_dev_merchant
+          requires:
+            - pause_dev
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: dev
+          script: test-dev_merchant
+          gcp_project_id_admin: l214552987832909
+      - approve_deploy_uat:
+          type: approval
+          requires:
+            - test_dev
+            - test_dev_inventory
+            - test_dev_rma
+            - test_dev_merchant
+      - deploy:
+          post-steps: *on_fail_notification
+          name: deploy_uat
+          requires:
+            - approve_deploy_uat
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: uat
+          gcp_project_id: l316548985125124
+          gcp_region: us-central1
+          gcp_project_id_admin: l214552987832909
+      - pause:
+          name: pause_uat
+          requires:
+            - deploy_uat
+          context: svc
+      - test:
+          post-steps: *on_fail_notification
+          name: test_uat
+          requires:
+            - pause_uat
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: uat
+          script: test-uat
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_uat_inventory
+          requires:
+            - pause_uat
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: uat
+          script: test-uat_inventory
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_uat_rma
+          requires:
+            - pause_uat
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: uat
+          script: test-uat_rma
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_uat_merchant
+          requires:
+            - pause_uat
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: uat
+          script: test-uat_merchant
+          gcp_project_id_admin: l214552987832909
+      - approve_deploy_stg:
+          type: approval
+          requires:
+            - test_uat
+            - test_uat_inventory
+            - test_uat_rma
+            - test_uat_merchant
+      - deploy:
+          post-steps: *on_fail_notification
+          name: deploy_stg
+          requires:
+            - approve_deploy_stg
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: stg
+          gcp_project_id: l107561072267281
+          gcp_region: us-central1
+          gcp_project_id_admin: l214552987832909
+      - pause:
+          name: pause_stg
+          requires:
+            - deploy_stg
+          context: svc
+      - test:
+          post-steps: *on_fail_notification
+          name: test_stg
+          requires:
+            - pause_stg
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: stg
+          script: test-stg
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_stg_inventory
+          requires:
+            - pause_stg
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: stg
+          script: test-stg_inventory
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_stg_rma
+          requires:
+            - pause_stg
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: stg
+          script: test-stg_rma
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_stg_merchant
+          requires:
+            - pause_stg
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: stg
+          script: test-stg_merchant
+          gcp_project_id_admin: l214552987832909
+      - approve_deploy_prd:
+          type: approval
+          requires:
+            - test_stg
+            - test_stg_inventory
+            - test_stg_rma
+            - test_stg_merchant
+      - deploy:
+          post-steps: *on_fail_notification
+          name: deploy_prd
+          requires:
+            - approve_deploy_prd
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: prd
+          gcp_project_id: l254628120186857
+          gcp_region: us-central1
+          gcp_project_id_admin: l214552987832909
+      - pause:
+          name: pause_prd
+          requires:
+            - deploy_prd
+          context: svc
+      - test:
+          post-steps: *on_fail_notification
+          name: test_prd
+          requires:
+            - pause_prd
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: prd
+          script: test-prd
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_prd_inventory
+          requires:
+            - pause_prd
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: prd
+          script: test-prd_inventory
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_prd_rma
+          requires:
+            - pause_prd
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: prd
+          script: test-prd_rma
+          gcp_project_id_admin: l214552987832909
+      - test:
+          post-steps: *on_fail_notification
+          name: test_prd_merchant
+          requires:
+            - pause_prd
+          context: svc
+          svc: ${CIRCLE_PROJECT_REPONAME}
+          env: prd
+          script: test-prd_merchant
+          gcp_project_id_admin: l214552987832909
+      - approve_logs_ok:
+          type: approval
+          requires:
+            - test_prd
+            - test_prd_inventory
+            - test_prd_rma
+            - test_prd_merchant

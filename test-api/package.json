@@ -1,0 +1,30 @@
+{
+  "name": "car-svc",
+  "version": "1.0.0",
+  "description": "API Tests - car-svc",
+  "author": "tom wang",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": "git@github.com:tom-wang/car-svc.git",
+  "dependencies": {
+    "newman": "5.2.2"
+  },
+  "scripts": {
+    "test-dev": "newman run car-svc.postman_collection.json -e car-svc_dev.postman_environment.json",
+    "test-dev_inventory": "newman run car-svc_inventory.postman_collection.json -e car-svc_dev.postman_environment.json",
+    "test-dev_rma": "newman run car-svc_rma.postman_collection.json -e car-svc_dev.postman_environment.json",
+    "test-dev_merchant": "newman run car-svc_merchant.postman_collection.json -e car-svc_dev.postman_environment.json",
+    "test-prd": "newman run car-svc.postman_collection.json -e car-svc_prd.postman_environment.json",
+    "test-prd_inventory": "newman run car-svc_inventory.postman_collection.json -e car-svc_prd.postman_environment.json",
+    "test-prd_rma": "newman run car-svc_rma.postman_collection.json -e car-svc_prd.postman_environment.json",
+    "test-prd_merchant": "newman run car-svc_merchant.postman_collection.json -e car-svc_prd.postman_environment.json",
+    "test-stg": "newman run car-svc.postman_collection.json -e car-svc_stg.postman_environment.json",
+    "test-stg_inventory": "newman run car-svc_inventory.postman_collection.json -e car-svc_stg.postman_environment.json",
+    "test-stg_rma": "newman run car-svc_rma.postman_collection.json -e car-svc_stg.postman_environment.json",
+    "test-stg_merchant": "newman run car-svc_merchant.postman_collection.json -e car-svc_stg.postman_environment.json",
+    "test-uat": "newman run car-svc.postman_collection.json -e car-svc_uat.postman_environment.json",
+    "test-uat_inventory": "newman run car-svc_inventory.postman_collection.json -e car-svc_uat.postman_environment.json",
+    "test-uat_rma": "newman run car-svc_rma.postman_collection.json -e car-svc_uat.postman_environment.json",
+    "test-uat_merchant": "newman run car-svc_merchant.postman_collection.json -e car-svc_uat.postman_environment.json"
+  }
+}
