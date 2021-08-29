@@ -15,7 +15,7 @@ import (
 // @Description See schema file car_create.json for body requirements
 // @Success 201
 // @Header 201 {string} Location "id"
-// @Router /v1/cars[post]
+// @Router /v1/cars [post]
 func (c client) CreateCar() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -44,7 +44,7 @@ func (c client) CreateCar() http.HandlerFunc {
 // @Description See schema file cars_search.json for query params
 // @Description See schema file cars.json for response
 // @Success 200
-// @Router /v1/cars[get]
+// @Router /v1/cars [get]
 func (c client) SearchCars() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -85,7 +85,7 @@ func (c client) SearchCars() http.HandlerFunc {
 // @Description read car
 // @Description See schema file car_read.json for response
 // @Success 200
-// @Router /v1/cars/{car_id}[get]
+// @Router /v1/cars/{car_id} [get]
 func (c client) ReadCar() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -121,7 +121,7 @@ func (c client) ReadCar() http.HandlerFunc {
 // @Description update car
 // @Description See schema file car_update.json for user input
 // @Success 204
-// @Router /v1/cars/{car_id}[put]
+// @Router /v1/cars/{car_id} [put]
 func (c client) UpdateCar() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -148,7 +148,7 @@ func (c client) UpdateCar() http.HandlerFunc {
 // @Description delete car
 // @Description See schema file car_delete.json for user input
 // @Success 204
-// @Router /v1/cars/{car_id}[delete]
+// @Router /v1/cars/{car_id} [delete]
 func (c client) DeleteCar() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
