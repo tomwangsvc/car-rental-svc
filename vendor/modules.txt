@@ -85,6 +85,8 @@ github.com/mitchellh/go-wordwrap
 github.com/pkg/errors
 # github.com/sethgrid/pester v1.1.0
 github.com/sethgrid/pester
+# github.com/stretchr/testify v1.7.0
+## explicit
 # github.com/tidwall/gjson v1.7.4
 github.com/tidwall/gjson
 # github.com/tidwall/match v1.0.3
@@ -192,7 +194,8 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
+# golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
+## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.6

@@ -19,44 +19,44 @@ var (
 
 type clientError struct{}
 
-func (clientError) CreateCar(ctx context.Context, carCreate dto.CarCreate) (string, error) {
+func (clientError) CreateCar(_ context.Context, _ dto.CarCreate) (string, error) {
 	return "", ExpectedErrorClient
 }
 
-func (clientError) SearchCars(ctx context.Context, carCreate dto.CarsSearch) ([]byte, *lib_pagination.Pagination, error) {
+func (clientError) SearchCars(_ context.Context, _ dto.CarsSearch) ([]byte, *lib_pagination.Pagination, error) {
 	return nil, nil, ExpectedErrorClient
 }
 
-func (clientError) ReadCar(ctx context.Context, carCreate dto.CarRead) ([]byte, error) {
+func (clientError) ReadCar(_ context.Context, _ dto.CarRead) ([]byte, error) {
 	return nil, ExpectedErrorClient
 }
 
-func (clientError) UpdateCar(ctx context.Context, carCreate dto.CarUpdate) error {
+func (clientError) UpdateCar(_ context.Context, _ dto.CarUpdate) error {
 	return ExpectedErrorClient
 }
 
-func (clientError) DeleteCar(ctx context.Context, carCreate dto.CarDelete) error {
+func (clientError) DeleteCar(_ context.Context, _ dto.CarDelete) error {
 	return ExpectedErrorClient
 }
 
 type clientSuccess struct{}
 
-func (clientSuccess) CreateCar(ctx context.Context, carCreate dto.CarCreate) (string, error) {
+func (clientSuccess) CreateCar(_ context.Context, _ dto.CarCreate) (string, error) {
 	return lib_mock.ExpectedResultString, nil
 }
 
-func (clientSuccess) SearchCars(ctx context.Context, carCreate dto.CarsSearch) ([]byte, *lib_pagination.Pagination, error) {
+func (clientSuccess) SearchCars(_ context.Context, _ dto.CarsSearch) ([]byte, *lib_pagination.Pagination, error) {
 	return lib_mock.ExpectedResultBytes, nil, nil
 }
 
-func (clientSuccess) ReadCar(ctx context.Context, carCreate dto.CarRead) ([]byte, error) {
+func (clientSuccess) ReadCar(_ context.Context, _ dto.CarRead) ([]byte, error) {
 	return lib_mock.ExpectedResultBytes, nil
 }
 
-func (clientSuccess) UpdateCar(ctx context.Context, carCreate dto.CarUpdate) error {
+func (clientSuccess) UpdateCar(_ context.Context, _ dto.CarUpdate) error {
 	return nil
 }
 
-func (clientSuccess) DeleteCar(ctx context.Context, carCreate dto.CarDelete) error {
+func (clientSuccess) DeleteCar(_ context.Context, _ dto.CarDelete) error {
 	return nil
 }
