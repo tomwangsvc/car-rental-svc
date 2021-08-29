@@ -306,6 +306,8 @@ jobs:
               done
             fi
 
+      - enable_service_account: *gcp_service_account_admin_circleci_svc
+
       - run:
       - install_node
       - *restore_node_cache
