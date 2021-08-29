@@ -10,6 +10,7 @@ import (
 )
 
 // @Summary create car
+// @Param Authorization header string true "IAM token"
 // @Description create car
 // @Description See schema file car_create.json for body requirements
 // @Param Authorization header string not implementeed
@@ -39,6 +40,7 @@ func (c client) CreateCar() http.HandlerFunc {
 }
 
 // @Summary search cars
+// @Param Authorization header string true "IAM token"
 // @Description search cars
 // @Description See schema file cars_search.json for query params
 // @Description See schema file cars.json for response
@@ -81,6 +83,7 @@ func (c client) SearchCars() http.HandlerFunc {
 }
 
 // @Summary read car
+// @Param Authorization header string true "IAM token"
 // @Description read car
 // @Description See schema file car_read.json for response
 // @Param Authorization header string not implementeed
@@ -117,6 +120,7 @@ func (c client) ReadCar() http.HandlerFunc {
 }
 
 // @Summary update car
+// @Param Authorization header string true "IAM token"
 // @Description update car
 // @Description See schema file car_update.json for user input
 // @Param Authorization header string not implementeed
@@ -144,6 +148,7 @@ func (c client) UpdateCar() http.HandlerFunc {
 }
 
 // @Summary delete car
+// @Param Authorization header string true "IAM token"
 // @Description delete car
 // @Description See schema file car_delete.json for user input
 // @Param Authorization header string not implementeed
