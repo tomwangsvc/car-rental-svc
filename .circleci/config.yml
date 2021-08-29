@@ -309,13 +309,6 @@ jobs:
       - enable_service_account: *gcp_service_account_admin_circleci_svc
 
       - run:
-      - install_node
-      - *restore_node_cache
-      - *node_dependencies
-      - *save_node_cache
-      - install_tools
-
-      - run:
           name: "Audit postman api tests"
           command: |
             # Exit script if you try to use an uninitialized variable.
