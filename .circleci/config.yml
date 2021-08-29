@@ -103,7 +103,7 @@ commands:
             # Use the error status of the first failure, rather than that of the last item in a pipeline.
             set -o pipefail
 
-            echo << parameters.gcp_project_key >> | base64 --decode > gcp_project_key.json
+            echo << parameters.gcp_project_key >> > gcp_project_key.json
             gcloud auth activate-service-account --key-file gcp_project_key.json
             gcloud config set project << parameters.gcp_project_id >>
             gcloud config set compute/region us-central1
@@ -577,7 +577,7 @@ jobs:
                 echo
 
                 echo "Making credentials available to migratex"
-                echo ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC} | base64 --decode > gcp_project_key.json
+                echo ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC} > gcp_project_key.json
                 export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/gcp_project_key.json
 
                 echo "Setting default GCP project for the Spanner Go client library used by migratex"
