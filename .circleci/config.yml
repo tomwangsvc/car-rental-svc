@@ -309,20 +309,20 @@ jobs:
       - enable_service_account: *gcp_service_account_admin_circleci_svc
 
       - run:
-          name: "Check postman environments files are available"
-          command: |
-            # Exit script if you try to use an uninitialized variable.
-            set -o nounset
-            # Exit script if a statement returns a non-true return value.
-            set -o errexit
-            # Use the error status of the first failure, rather than that of the last item in a pipeline.
-            set -o pipefail
+          # name: "Check postman environments files are available"
+          # command: |
+          #   # Exit script if you try to use an uninitialized variable.
+          #   set -o nounset
+          #   # Exit script if a statement returns a non-true return value.
+          #   set -o errexit
+          #   # Use the error status of the first failure, rather than that of the last item in a pipeline.
+          #   set -o pipefail
 
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/dev/car-svc_dev.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/dev/car-svc_dev-localhost.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production/car-svc/prd/car-svc_prd.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/stg/car-svc_stg.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/uat/car-svc_uat.postman_environment.json
+          #   gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/dev/car-svc_dev.postman_environment.json
+          #   gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/dev/car-svc_dev-localhost.postman_environment.json
+          #   gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production/car-svc/prd/car-svc_prd.postman_environment.json
+          #   gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/stg/car-svc_stg.postman_environment.json
+          #   gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/uat/car-svc_uat.postman_environment.json
 
       - install_node
       - *restore_node_cache
