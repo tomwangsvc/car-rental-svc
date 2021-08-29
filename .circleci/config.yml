@@ -159,25 +159,7 @@ commands:
             tar -C /usr/local/bin -xzf migrate.linux-amd64.tar.gz
             mv /usr/local/bin/migrate.linux-amd64 /usr/local/bin/migrate
             migrate --version
-  install_node:
-    steps:
-      - run:
-          name: "Install node.js"
-          command: |
-            # Exit script if you try to use an uninitialized variable.
-            set -o nounset
-            # Exit script if a statement returns a non-true return value.
-            set -o errexit
-            # Use the error status of the first failure, rather than that of the last item in a pipeline.
-            set -o pipefail
-
-            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.38.0/install.sh | bash
-            . ${HOME}/.nvm/nvm.sh
-            nvm install 14.16.1
-
-            echo "node version -> $(node --version)"
-            echo "npm version -> $(npm --version)"
-            node -e "console.log('Running Node.js ' + process.version)"
+ 
   generate_container:
     parameters:
       svc:
@@ -304,46 +286,6 @@ jobs:
                 echo "Processing: ${i}"
                 go test -timeout 5000ms ${i}
               done
-            fi
-
-      - enable_service_account: *gcp_service_account_admin_circleci_svc
-
-      - run:
-      - install_node
-      - *restore_node_cache
-      - *node_dependencies
-      - *save_node_cache
-      - install_tools
-
-      - run:
-          name: "Audit postman api tests"
-          command: |
-            # Exit script if you try to use an uninitialized variable.
-            set -o nounset
-            # Exit script if a statement returns a non-true return value.
-            set -o errexit
-            # Use the error status of the first failure, rather than that of the last item in a pipeline.
-            set -o pipefail
-
-            . ${HOME}/.nvm/nvm.sh
-
-            cd test-api
-
-            # error off since we determine which vulnerabilities should gate the build
-            set +o errexit
-            NPM_AUDIT=$(npm audit --json)
-            set -o errexit
-
-            echo "${NPM_AUDIT}"
-
-            HIGH=$(echo ${NPM_AUDIT} | jq .metadata.vulnerabilities.high)
-            CRITICAL=$(echo ${NPM_AUDIT} | jq .metadata.vulnerabilities.critical)
-
-            echo "Found npm audit high vulnerabilities HIGH=${HIGH}"
-            echo "Found npm audit critical vulnerabilities CRITICAL=${CRITICAL}"
-
-            if [ "${HIGH}" -gt 0 ] || [ "${CRITICAL}" -gt 0 ]; then
-              echo "Found '${HIGH}' and '${CRITICAL}' npm audit vulnerabilities. These issues should be resolved ASAP but unfortunately that is out of our control"
             fi
 
       - run:
@@ -739,25 +681,6 @@ jobs:
             cd test-api
             gsutil cp ${POSTMAN_BUCKET}/car-svc/<< parameters.env >>/car-svc_*<< parameters.env >>.postman_environment.json .
             ls -al
-
-      - install_node
-
-      - run:
-          name: "Run integration test suite"
-          command: |
-            # Exit script if you try to use an uninitialized variable.
-            set -o nounset
-            # Exit script if a statement returns a non-true return value.
-            set -o errexit
-            # Use the error status of the first failure, rather than that of the last item in a pipeline.
-            set -o pipefail
-
-            . ${HOME}/.nvm/nvm.sh
-
-            cd test-api
-            ls -al
-            npm --quiet ci
-            npm run-script << parameters.script >>
 
 workflows:
   version: 2
