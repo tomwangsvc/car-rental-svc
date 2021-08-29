@@ -67,7 +67,7 @@ commands:
             # Use the error status of the first failure, rather than that of the last item in a pipeline.
             set -o pipefail
 
-            JOB_INVOCATION_FLAG=JOB_INVOCATION_FLAG_<< parameters.svc >>_<< parameters.job_name >>_<< parameters.env >>_${CIRCLE_BUILD_NUM}.txt
+            JOB_INVOCATION_FLAG=JOB_INVOCATION_FLAG_car-svc_<< parameters.job_name >>_<< parameters.env >>_${CIRCLE_BUILD_NUM}.txt
 
             echo "Checking for file '${JOB_INVOCATION_FLAG}', will fail if it exists because that will flag a job being re-run"
             echo "-> See https://ideas.circleci.com/ideas/CCI-I-852"
@@ -226,7 +226,7 @@ commands:
             echo
 
             cd ${HOME}/tmp
-            export IMAGE="gcr.io/<< parameters.gcp_project_id_container_repository >>/<< parameters.svc >>:${CIRCLE_SHA1}"
+            export IMAGE="gcr.io/<< parameters.gcp_project_id_container_repository >>/car-svc:${CIRCLE_SHA1}"
             echo "Creating image -> ${IMAGE}"
             gcloud builds submit --tag ${IMAGE}
 
@@ -265,9 +265,9 @@ jobs:
             export PATH=/usr/local/go/bin:${PATH}
 
             echo "Running formatting checks"
-            failed_fmt=$(go fmt << parameters.svc >>/...)
+            failed_fmt=$(go fmt car-svc/...)
             if [ ! -z "${failed_fmt}" ]; then
-              echo >&2 "Go files failed FMT checks. In the orchestration repository 'svc' root please run: GOPATH=\$(pwd) && go fmt << parameters.svc >>/..."
+              echo >&2 "Go files failed FMT checks. In the orchestration repository 'svc' root please run: GOPATH=\$(pwd) && go fmt car-svc/..."
               for fn in ${failed_fmt}; do
                 echo >&2 "FAILED FMT CHECK -> $(pwd)/${fn}"
               done
@@ -275,7 +275,7 @@ jobs:
             fi
 
             echo "Running vet checks"
-            go vet << parameters.svc >>/...
+            go vet car-svc/...
 
             echo "Running linting checks"
             cd ${HOME} && go get -u github.com/mgechev/revive && cd ${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}
@@ -318,11 +318,11 @@ jobs:
             # Use the error status of the first failure, rather than that of the last item in a pipeline.
             set -o pipefail
 
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/dev/<< parameters.svc >>_dev.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/dev/<< parameters.svc >>_dev-localhost.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production/<< parameters.svc >>/prd/<< parameters.svc >>_prd.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/stg/<< parameters.svc >>_stg.postman_environment.json
-            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/<< parameters.svc >>/uat/<< parameters.svc >>_uat.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/dev/car-svc_dev.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/dev/car-svc_dev-localhost.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production/car-svc/prd/car-svc_prd.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/stg/car-svc_stg.postman_environment.json
+            gsutil ls gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production/car-svc/uat/car-svc_uat.postman_environment.json
 
       - install_node
       - *restore_node_cache
@@ -395,7 +395,7 @@ jobs:
             LC_CI_COMMIT_MSG=$(git log --format=oneline -n 1 ${CIRCLE_SHA1})
             export LC_CI_COMMIT_MSG=${LC_CI_COMMIT_MSG//\"/\'}
 
-            echo "{\"build_date\":\"${LC_CI_BUILD_DATE}\",\"build_number\":\"${LC_CI_BUILD_NUMBER}\",\"project\":\"<< parameters.svc >>\",\"commit_id\":\"${LC_CI_COMMIT_ID}\",\"commit_msg\":\"${LC_CI_COMMIT_MSG}\"}" > ci_release_notes.json
+            echo "{\"build_date\":\"${LC_CI_BUILD_DATE}\",\"build_number\":\"${LC_CI_BUILD_NUMBER}\",\"project\":\"car-svc\",\"commit_id\":\"${LC_CI_COMMIT_ID}\",\"commit_msg\":\"${LC_CI_COMMIT_MSG}\"}" > ci_release_notes.json
             cat ci_release_notes.json
 
             echo "Adding metadata to health check"
@@ -404,7 +404,7 @@ jobs:
             sed -i "s/@LC_CI_BUILD_NUMBER@/${LC_CI_BUILD_NUMBER}/g" ./internal/http/routes/health.go
             sed -i "s/@LC_CI_COMMIT_ID@/${LC_CI_COMMIT_ID}/g" ./internal/http/routes/health.go
 
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o << parameters.svc >> ./cmd/service
+            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o car-svc ./cmd/service
 
             echo "Generating OpenAPI spec"
             cd ${HOME} && go get -u github.com/swaggo/swag/cmd/swag@v1.6.9 && cd ${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}
@@ -458,7 +458,7 @@ jobs:
             cp -f deployments/svc_*.yaml ${HOME}/tmp
             cp -f deployments/policy.yaml ${HOME}/tmp
             cp -f build/package/Dockerfile ${HOME}/tmp
-            cp -f << parameters.svc >> ${HOME}/tmp
+            cp -f car-svc ${HOME}/tmp
             cp -f /etc/ssl/certs/ca-certificates.crt ${HOME}/tmp
             cp -f /usr/local/go/lib/time/<< parameters.zone_info >> ${HOME}/tmp
             [ -d templates ] && for i in $(find templates -name "*.md" ); do rm -f $i; done && cp -rf templates ${HOME}/tmp
@@ -477,13 +477,13 @@ jobs:
             echo "--------------------------------------------------------------------------------"
             echo
 
-            tar -cvzf $HOME/<< parameters.svc >>-${CIRCLE_SHA1}.tgz .
+            tar -cvzf $HOME/car-svc-${CIRCLE_SHA1}.tgz .
             ls -al ${HOME}
-            gsutil cp $HOME/<< parameters.svc >>-${CIRCLE_SHA1}.tgz gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun
+            gsutil cp $HOME/car-svc-${CIRCLE_SHA1}.tgz gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun
 
       - generate_container:
           gcp_project_id_container_repository: << parameters.gcp_project_id_container_repository >>
-          svc: << parameters.svc >>
+          svc: car-svc
 
   deploy:
     parameters:
@@ -508,7 +508,7 @@ jobs:
       - enable_service_account: *gcp_service_account_admin_circleci_svc
 
       - prevent_job_rerun:
-          svc: << parameters.svc >>
+          svc: car-svc
           job_name: deploy
           env: << parameters.env >>
           gcp_project_id_admin: << parameters.gcp_project_id_admin >>
@@ -525,8 +525,8 @@ jobs:
             # Use the error status of the first failure, rather than that of the last item in a pipeline.
             set -o pipefail
 
-            gsutil cp gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun/<< parameters.svc >>-${CIRCLE_SHA1}.tgz .
-            tar -xzf << parameters.svc >>-${CIRCLE_SHA1}.tgz
+            gsutil cp gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun/car-svc-${CIRCLE_SHA1}.tgz .
+            tar -xzf car-svc-${CIRCLE_SHA1}.tgz
 
             echo
             echo "--------------------------------------------------------------------------------"
@@ -667,9 +667,9 @@ jobs:
               echo "Found spanner migrations and will upload them for infrastructure automation"
               # Ignore errors -> bucket prefix may not exist on first deployment
               set +o errexit
-              gsutil -m rm -r gs://<< parameters.gcp_project_id_admin >>-svc-spanner/<< parameters.svc >>/<< parameters.env >>
+              gsutil -m rm -r gs://<< parameters.gcp_project_id_admin >>-svc-spanner/car-svc/<< parameters.env >>
               set -o errexit
-              gsutil -m cp -r spanner/* gs://<< parameters.gcp_project_id_admin >>-svc-spanner/<< parameters.svc >>/<< parameters.env >>/
+              gsutil -m cp -r spanner/* gs://<< parameters.gcp_project_id_admin >>-svc-spanner/car-svc/<< parameters.env >>/
 
               else
                 echo "Skipping upload of spanner migrations, there are none"
@@ -683,7 +683,7 @@ jobs:
             if [ << parameters.env >> == "dev" ] || [ << parameters.env >> == "stg" ] || [ << parameters.env >> == "uat" ]; then
               echo "Running in environment << parameters.env >> will now upload any postman environment files to make them available to interested parties"
               POSTMAN_BUCKET="gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-non-production"
-              gsutil cp ${POSTMAN_BUCKET}/<< parameters.svc >>/<< parameters.env >>/<< parameters.svc >>_*<< parameters.env >>.postman_environment.json .
+              gsutil cp ${POSTMAN_BUCKET}/car-svc/<< parameters.env >>/car-svc_*<< parameters.env >>.postman_environment.json .
               echo "Postman environment files to archive"
               ls -al
               cp *.postman_environment.json ${HOME}/tmp
@@ -696,17 +696,17 @@ jobs:
 
             echo "Spec to archive"
             ls -al
-            tar -cvzf $HOME/<< parameters.svc >>_spec_${DEPLOYED_AT}_${COMMIT_REFERENCE}.tgz .
+            tar -cvzf $HOME/car-svc_spec_${DEPLOYED_AT}_${COMMIT_REFERENCE}.tgz .
 
             echo "Uploading spec files"
-            gsutil cp $HOME/<< parameters.svc >>_spec_${DEPLOYED_AT}_${COMMIT_REFERENCE}.tgz gs://<< parameters.gcp_project_id_admin >>-svc-spec/<< parameters.svc >>/<< parameters.env >>/
+            gsutil cp $HOME/car-svc_spec_${DEPLOYED_AT}_${COMMIT_REFERENCE}.tgz gs://<< parameters.gcp_project_id_admin >>-svc-spec/car-svc/<< parameters.env >>/
 
             echo "Uploading postman files"
             # Ignore errors -> bucket prefix may not exist on first deployment
             set +o errexit
-            gsutil -m rm -r gs://<< parameters.gcp_project_id_admin >>-svc-postman-collections/<< parameters.svc >>/<< parameters.env >>
+            gsutil -m rm -r gs://<< parameters.gcp_project_id_admin >>-svc-postman-collections/car-svc/<< parameters.env >>
             set -o errexit
-            gsutil -m cp *.postman_collection.json gs://<< parameters.gcp_project_id_admin >>-svc-postman-collections/<< parameters.svc >>/<< parameters.env >>/
+            gsutil -m cp *.postman_collection.json gs://<< parameters.gcp_project_id_admin >>-svc-postman-collections/car-svc/<< parameters.env >>/
 
   pause:
     docker:
@@ -749,8 +749,8 @@ jobs:
             # Use the error status of the first failure, rather than that of the last item in a pipeline.
             set -o pipefail
 
-            gsutil cp gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun/<< parameters.svc >>-${CIRCLE_SHA1}.tgz .
-            tar -xzf << parameters.svc >>-${CIRCLE_SHA1}.tgz
+            gsutil cp gs://<< parameters.gcp_project_id_admin >>-cicd-cloudrun/car-svc-${CIRCLE_SHA1}.tgz .
+            tar -xzf car-svc-${CIRCLE_SHA1}.tgz
             ls -al
 
       - install_tools
@@ -768,7 +768,7 @@ jobs:
             [ << parameters.env >> == "prd" ] && POSTMAN_BUCKET="gs://<< parameters.gcp_project_id_admin >>-svc-postman-environments-production"
 
             cd test-api
-            gsutil cp ${POSTMAN_BUCKET}/<< parameters.svc >>/<< parameters.env >>/<< parameters.svc >>_*<< parameters.env >>.postman_environment.json .
+            gsutil cp ${POSTMAN_BUCKET}/car-svc/<< parameters.env >>/car-svc_*<< parameters.env >>.postman_environment.json .
             ls -al
 
       - install_node

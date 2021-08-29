@@ -49,10 +49,9 @@ echo
 
 cd ${SCRIPT_DIR}
 
-echo "Formatting..."
-set +e
+echo "Formatting... go fmt "${SVC}"/..."
 go fmt ${SVC}/...
-set -e
+echo "Formatted"
 echo
 
 echo "Testing..."
