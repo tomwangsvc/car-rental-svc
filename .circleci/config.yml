@@ -25,6 +25,7 @@ jobs:
           service-name: 'example-service-${CIRCLE_BUILD_NUM}'
 orbs:
   cloudrun: circleci/gcp-cloud-run@1.0.2
+  gcp-cli: circleci/gcp-cli@2.2.0
 version: 2.1
 workflows:
   build_and_deploy_to_gke_workflow:
