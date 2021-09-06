@@ -3,6 +3,10 @@ jobs:
     docker:
       - image: 'cimg/base:stable'
     steps:
+      - run: |
+          echo $GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC | gcloud auth activate-service-account --key-file=-
+          gcloud --quiet config set project data-fabric-323905
+          gcloud --quiet config set compute/zone asia-east1-a
       - checkout
       - cloudrun/init
       - cloudrun/create_gke_cluster:
@@ -12,11 +16,11 @@ jobs:
           scopes: cloud-platform
           zone: us-east1
       - cloudrun/build:
-          tag: 'gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}'
+          tag: 'gcr.io/data-fabric-323905/test-${CIRCLE_SHA1}'
       - cloudrun/deploy:
           cluster: 'example-cluster-${CIRCLE_BUILD_NUM}'
           cluster-location: us-east1
-          image: 'gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}'
+          image: 'gcr.io/data-fabric-323905/test-${CIRCLE_SHA1}'
           platform: gke
           service-name: 'example-service-${CIRCLE_BUILD_NUM}'
 orbs:
