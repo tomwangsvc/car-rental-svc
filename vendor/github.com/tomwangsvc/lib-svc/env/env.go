@@ -135,16 +135,16 @@ func New(svcId string) (*Env, error) {
 	cloudRunService := os.Getenv("K_SERVICE")
 	cloudRun := cloudRunRevision != "" && cloudRunService != ""
 
-	bool2int := func(v bool) int {
-		if v {
-			return 1
-		}
-		return 0
-	}
+	// bool2int := func(v bool) int {
+	// 	if v {
+	// 		return 1
+	// 	}
+	// 	return 0
+	// }
 
-	if bool2int(cloudRun)+bool2int(gae)+bool2int(localhost) != 1 {
-		return nil, lib_errors.Errorf("Cannot uniquely determine runtime: cloudRun=%t, gae=%t, localhost=%t", cloudRun, gae, localhost)
-	}
+	// if bool2int(cloudRun)+bool2int(gae)+bool2int(localhost) != 1 {
+	// 	return nil, lib_errors.Errorf("Cannot uniquely determine runtime: cloudRun=%t, gae=%t, localhost=%t", cloudRun, gae, localhost)
+	// }
 
 	var gcpProjectId, expectedGcpProjectIdEnvVar string
 	if localhost {
