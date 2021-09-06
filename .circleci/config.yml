@@ -28,6 +28,11 @@ orbs:
   gcp-cli: circleci/gcp-cli@2.2.0
 version: 2.1
 workflows:
+  install_and_configure_cli:
+    jobs:
+      - gcp-cli/install_and_initialize_cli:
+          context: myContext
+          executor: gcp-cli/default
   build_and_deploy_to_gke_workflow:
     jobs:
       - build_and_deploy_gke
