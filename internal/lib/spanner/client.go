@@ -11,6 +11,7 @@ import (
 	lib_log "github.com/tomwangsvc/lib-svc/log"
 	lib_pagination "github.com/tomwangsvc/lib-svc/pagination"
 	lib_spanner "github.com/tomwangsvc/lib-svc/spanner"
+	"google.golang.org/api/option"
 )
 
 type Client interface {
@@ -37,7 +38,7 @@ type Config struct {
 
 func NewClient(ctx context.Context, config Config) (Client, error) {
 	lib_log.Info(ctx, "Initializing", lib_log.FmtAny("config", config))
-	spannerClient, err := spanner.NewClientWithConfig(ctx, fmt.Sprintf("projects/%s/instances/%s/databases/%s", config.ProjectId, config.InstanceId, config.DatabaseId), config.ClientConfig)
+	spannerClient, err := spanner.NewClientWithConfig(ctx, fmt.Sprintf("projects/%s/instances/%s/databases/%s", config.ProjectId, config.InstanceId, config.DatabaseId), config.ClientConfig, option.WithCredentialsFile("./docker-tomwang.json"))
 	if err != nil {
 		return nil, lib_errors.Wrap(err, "Failed creating spanner client with config")
 	}
