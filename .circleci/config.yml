@@ -22,8 +22,6 @@ jobs:
           image: 'gcr.io/data-fabric-323905/test-${CIRCLE_SHA1}'
           platform: gke
           service-name: 'example-service-${CIRCLE_BUILD_NUM}'
-orbs:
-  cloudrun: circleci/gcp-cloud-run@x.y
 version: 2.1
 workflows:
   build_and_deploy_to_gke_workflow:
