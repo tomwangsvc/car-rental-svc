@@ -22,4 +22,4 @@ workflows:
   version: 2
   deploy:
     jobs:
-      - deploy_cloud_run:
+      - deploy_cloud_run
