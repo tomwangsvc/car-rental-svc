@@ -14,13 +14,12 @@ jobs:
         command: |
           echo "--------------------------------------------------------------------------------"
           echo "Using Dockerfile"
-          echo
           cat ${HOME}/tmp/Dockerfile
           echo "--------------------------------------------------------------------------------"
-          echo
-
+          cat ${CIRCLE_SHA1}
+          echo "--------------------------------------------------------------------------------"
           cd ${HOME}/tmp
-          export IMAGE="gcr.io/<< parameters.gcp_project_id_container_repository >>/<< parameters.svc >>:${CIRCLE_SHA1}"
+          export IMAGE="asia-east1-docker.pkg.dev/data-fabric-323905/cloud-run-source-deploy/car-svc-test@sha256:${CIRCLE_SHA1}"
           echo "Creating image -> ${IMAGE}"
           gcloud builds submit --tag ${IMAGE}
 
