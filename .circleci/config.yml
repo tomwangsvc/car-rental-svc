@@ -4,7 +4,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: google/cloud-sdk:335.0.0
+      - image: google/cloud-sdk:336.0.0
         auth:
           username: ${DOCKERHUB_USERNAME}
           password: ${DOCKERHUB_PASSWORD}
