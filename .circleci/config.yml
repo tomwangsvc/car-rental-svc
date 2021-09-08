@@ -5,9 +5,6 @@ jobs:
   build:
     docker:
       - image: google/cloud-sdk:355.0.0
-        auth:
-          username: ${DOCKERHUB_USERNAME}
-          password: ${DOCKERHUB_PASSWORD}
     steps:
       - checkout
       - run:
