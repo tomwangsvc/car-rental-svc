@@ -21,9 +21,7 @@ jobs:
             gcloud auth activate-service-account --key-file gcp_project_key.json
             gcloud config list
             echo "--------------------------------------------------------------------------------"
-            export IMAGE="asia-east1-docker.pkg.dev/data-fabric-323905/cloud-run-source-deploy/car-svc-test@sha256:${CIRCLE_SHA1}"
-            echo "Creating image -> ${IMAGE}"
-            gcloud builds submit --tag ${IMAGE}
+            gcloud run deploy car-svc-test --region=asia-east1 --source .
 
 # Orchestrate our job run sequence
 workflows:
