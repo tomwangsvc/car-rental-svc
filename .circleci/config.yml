@@ -24,7 +24,8 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - build_dev
+      - build_dev:
+        name: deploy_dev
       - approve_deploy_uat:
         type: approval
         requires:
