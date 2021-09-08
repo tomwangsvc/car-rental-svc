@@ -10,7 +10,7 @@ jobs:
           password: ${DOCKERHUB_PASSWORD}
     steps:
       - checkout
-      - run: gcloud run deploy car-svc-test --region=asia-east1 --source .
+      - run: gcloud alpha run deploy car-svc-test --region=asia-east1 --source .
 
 # Orchestrate our job run sequence
 workflows:
