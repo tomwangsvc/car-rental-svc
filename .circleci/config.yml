@@ -1,28 +1,16 @@
 jobs:
   build_and_deploy_gke:
-    docker:
-      - image: 'cimg/base:stable'
     steps:
-      - run: |
-          echo $GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC | gcloud auth activate-service-account --key-file=-
-          gcloud --quiet config set project data-fabric-323905
-          gcloud --quiet config set compute/zone asia-east1-a
-      - checkout
-      - cloudrun/init
-      - cloudrun/create_gke_cluster:
-          cluster-name: 'example-cluster-${CIRCLE_BUILD_NUM}'
-          enable-stackdriver-kubernetes: true
-          machine-type: n1-standard-4
-          scopes: cloud-platform
-          zone: us-east1
-      - cloudrun/build:
-          tag: 'gcr.io/data-fabric-323905/test-${CIRCLE_SHA1}'
-      - cloudrun/deploy:
-          cluster: 'example-cluster-${CIRCLE_BUILD_NUM}'
-          cluster-location: us-east1
-          image: 'gcr.io/data-fabric-323905/test-${CIRCLE_SHA1}'
-          platform: gke
-          service-name: 'example-service-${CIRCLE_BUILD_NUM}'
+      - run:
+        name: "Run checks"
+        command: |
+          # Exit script if you try to use an uninitialized variable.
+          set -o nounset
+          # Exit script if a statement returns a non-true return value.
+          set -o errexit
+          # Use the error status of the first failure, rather than that of the last item in a pipeline.
+          set -o pipefail
+          gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
 orbs:
   cloudrun: circleci/gcp-cloud-run@1.0.2
   gcp-cli: circleci/gcp-cli@2.2.0
