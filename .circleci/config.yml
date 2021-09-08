@@ -10,7 +10,7 @@ jobs:
           password: ${DOCKERHUB_PASSWORD}
     steps:
       - checkout
-      - run: gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
+      - run: gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905
 
 # Orchestrate our job run sequence
 workflows:
