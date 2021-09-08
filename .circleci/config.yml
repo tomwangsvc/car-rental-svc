@@ -4,7 +4,7 @@ orbs:
 version: 2.1
 
 jobs:
-  deploy_cloud_run:
+  deploy_cloud_run11:
     steps:
       - run:
         name: "Deploy to cloud run"
@@ -20,6 +20,6 @@ jobs:
 
 workflows:
   version: 2
-  deploy:
+  deploy2:
     jobs:
-      - deploy_cloud_run
+      - deploy_cloud_run11
