@@ -16,6 +16,7 @@ jobs:
             echo "Using Dockerfile"
             echo "--------------------------------------------------------------------------------"
             gcloud config set project data-fabric-323905
+            gcloud auth activate-service-account --key-file ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
             gcloud config list
             echo "--------------------------------------------------------------------------------"
             export IMAGE="asia-east1-docker.pkg.dev/data-fabric-323905/cloud-run-source-deploy/car-svc-test@sha256:${CIRCLE_SHA1}"
