@@ -1,18 +1,14 @@
-orbs:
-  cloudrun: circleci/gcp-cloud-run@1.0.2
-  gcp-cli: circleci/gcp-cli@2.2.0
 version: 2.1
 
+# Define the jobs we want to run for this project
 jobs:
-  deploy_cloud_run11:
+  build:
     steps:
-      - run:
-          name: "Deploy to cloud run"
-          command: |
-            gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
+      - checkout
+      - run: gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
 
+# Orchestrate our job run sequence
 workflows:
-  version: 2
-  deploy2:
+  build_and_test:
     jobs:
-      - deploy_cloud_run11
+      - build
