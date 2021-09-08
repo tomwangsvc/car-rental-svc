@@ -25,7 +25,7 @@ workflows:
   build_and_test:
     jobs:
       - build_dev
-      - pause:
-          name: pause_dev
-          requires:
-            - build_dev
+      - approve_deploy_uat:
+        type: approval
+        requires:
+          - build_dev
