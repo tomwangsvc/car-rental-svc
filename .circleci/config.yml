@@ -11,17 +11,18 @@ jobs:
     steps:
       - checkout
       - run:
-      echo "--------------------------------------------------------------------------------"
-      echo "Using Dockerfile"
-      echo
-      cat ${HOME}/tmp/Dockerfile
-      echo "--------------------------------------------------------------------------------"
-      echo
+        command: |
+          echo "--------------------------------------------------------------------------------"
+          echo "Using Dockerfile"
+          echo
+          cat ${HOME}/tmp/Dockerfile
+          echo "--------------------------------------------------------------------------------"
+          echo
 
-      cd ${HOME}/tmp
-      export IMAGE="gcr.io/<< parameters.gcp_project_id_container_repository >>/<< parameters.svc >>:${CIRCLE_SHA1}"
-      echo "Creating image -> ${IMAGE}"
-      gcloud builds submit --tag ${IMAGE}
+          cd ${HOME}/tmp
+          export IMAGE="gcr.io/<< parameters.gcp_project_id_container_repository >>/<< parameters.svc >>:${CIRCLE_SHA1}"
+          echo "Creating image -> ${IMAGE}"
+          gcloud builds submit --tag ${IMAGE}
 
 # Orchestrate our job run sequence
 workflows:
