@@ -1,8 +1,13 @@
+orbs:
+  cloudrun: circleci/gcp-cloud-run@1.0.2
+  gcp-cli: circleci/gcp-cli@2.2.0
+version: 2.1
+
 jobs:
   deploy_cloud_run:
     steps:
       - run:
-        name: "Run checks"
+        name: "Deploy to cloud run"
         command: |
           # Exit script if you try to use an uninitialized variable.
           set -o nounset
@@ -12,10 +17,7 @@ jobs:
           set -o pipefail
 
           gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
-orbs:
-  cloudrun: circleci/gcp-cloud-run@1.0.2
-  gcp-cli: circleci/gcp-cli@2.2.0
-version: 2.1
+
 workflows:
   version: 2
   deploy:
