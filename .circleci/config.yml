@@ -7,9 +7,9 @@ jobs:
   deploy_cloud_run11:
     steps:
       - run:
-        name: "Deploy to cloud run"
-        command: |
-          gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
+          name: "Deploy to cloud run"
+          command: |
+            gcloud run deploy car-svc-test --region=asia-east1 --source . --namespace=data-fabric-323905 --service-account=${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC}
 
 workflows:
   version: 2
