@@ -24,5 +24,4 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - build_dev:
-        name: deploy_dev
+      - build_dev
