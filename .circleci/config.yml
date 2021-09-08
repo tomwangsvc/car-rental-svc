@@ -26,6 +26,6 @@ workflows:
     jobs:
       - build_dev
       - approve_deploy_uat:
-        type: approval
-        requires:
-          - build_dev
+          type: approval
+          requires:
+            - build_dev
