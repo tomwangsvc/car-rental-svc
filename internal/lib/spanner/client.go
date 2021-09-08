@@ -11,7 +11,6 @@ import (
 	lib_log "github.com/tomwangsvc/lib-svc/log"
 	lib_pagination "github.com/tomwangsvc/lib-svc/pagination"
 	lib_spanner "github.com/tomwangsvc/lib-svc/spanner"
-	"google.golang.org/api/option"
 )
 
 type Client interface {
