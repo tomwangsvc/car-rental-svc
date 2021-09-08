@@ -11,17 +11,17 @@ jobs:
     steps:
       - checkout
       - run:
-        command: |
-          echo "--------------------------------------------------------------------------------"
-          echo "Using Dockerfile"
-          cat ${HOME}/tmp/Dockerfile
-          echo "--------------------------------------------------------------------------------"
-          cat ${CIRCLE_SHA1}
-          echo "--------------------------------------------------------------------------------"
-          cd ${HOME}/tmp
-          export IMAGE="asia-east1-docker.pkg.dev/data-fabric-323905/cloud-run-source-deploy/car-svc-test@sha256:${CIRCLE_SHA1}"
-          echo "Creating image -> ${IMAGE}"
-          gcloud builds submit --tag ${IMAGE}
+          command: |
+            echo "--------------------------------------------------------------------------------"
+            echo "Using Dockerfile"
+            cat ${HOME}/tmp/Dockerfile
+            echo "--------------------------------------------------------------------------------"
+            cat ${CIRCLE_SHA1}
+            echo "--------------------------------------------------------------------------------"
+            cd ${HOME}/tmp
+            export IMAGE="asia-east1-docker.pkg.dev/data-fabric-323905/cloud-run-source-deploy/car-svc-test@sha256:${CIRCLE_SHA1}"
+            echo "Creating image -> ${IMAGE}"
+            gcloud builds submit --tag ${IMAGE}
 
 # Orchestrate our job run sequence
 workflows:
