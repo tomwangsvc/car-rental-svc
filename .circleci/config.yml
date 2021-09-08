@@ -16,6 +16,7 @@ jobs:
             echo "Using Dockerfile"
             echo "--------------------------------------------------------------------------------"
             export ${CIRCLE_SHA1}
+            echo ${CIRCLE_SHA1}
             echo "--------------------------------------------------------------------------------"
             export IMAGE="asia-east1-docker.pkg.dev/data-fabric-323905/cloud-run-source-deploy/car-svc-test@sha256:${CIRCLE_SHA1}"
             echo "Creating image -> ${IMAGE}"
