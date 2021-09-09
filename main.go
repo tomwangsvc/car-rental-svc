@@ -24,8 +24,8 @@ func main() {
 	os.Setenv("SPANNER_INSTANCE_ID", "tom-wang-dev")
 	os.Setenv("SPANNER_DATABASE_ID", "car-svc")
 	os.Setenv("DEBUG", "true")
-	os.Setenv("GCP_PROJECT_ID", "data-fabric-323905")
-	os.Setenv("GCP_PROJECT_NUMBER", "518937487179")
+	os.Setenv("GCP_PROJECT_ID", "tw-uat")
+	os.Setenv("GCP_PROJECT_NUMBER", "43850220901")
 
 	env, err := lib_env.New("car-svc")
 	if err != nil {
@@ -33,8 +33,8 @@ func main() {
 	}
 	env.SpannerDatabaseId = "car-svc"
 	env.SpannerInstanceId = "tom-wang-dev"
-	env.GcpProjectId = "data-fabric-323905"
-	env.GcpProjectNumber = "518937487179"
+	env.GcpProjectId = "tw-uat"
+	env.GcpProjectNumber = "43850220901"
 	ctx := lib_context.NewStartUpContext()
 
 	// if err = lib_log.Init(ctx, *env); err != nil {
