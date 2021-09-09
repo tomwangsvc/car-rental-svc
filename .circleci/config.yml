@@ -13,12 +13,12 @@ jobs:
             echo "Using Dockerfile"
             cat ./Dockerfile
             echo "--------------------------------------------------------------------------------"
-            gcloud config set project data-fabric-323905
-            echo ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC} | base64 --decode > gcp_project_key.json
+            gcloud config set project tw-uat
+            echo ${GCP_SERVICE_ACCOUNT_ADMIN_CIRCLECI_SVC_UAT} | base64 --decode > gcp_project_key.json
             gcloud auth activate-service-account --key-file gcp_project_key.json
             gcloud config list
             echo "--------------------------------------------------------------------------------"
-            gcloud run deploy car-svc-test --region=asia-east1 --source .
+            gcloud run deploy car-svc-uat --region=asia-east1 --source .
 
 # Orchestrate our job run sequence
 workflows:
